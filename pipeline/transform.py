@@ -1,7 +1,7 @@
 import pandas as pd
 
 MAX_UNIT_PRICE = 1000
-
+ALLOWED_COUNTRIES = ["France", "Germany", "Italy", "Morocco", "Tunisia"]
 
 def _flag(df, mask, reason):
     """Mark the rows selected by `mask` as rejected, unless already rejected."""
@@ -10,6 +10,8 @@ def _flag(df, mask, reason):
 
 def clean_orders(df):
     """Apply the quality rules. Returns two tables: (clean, rejected)."""
+    # Rule 6 - validity: the shop only sells to these countries
+    _flag(df, ~df["country"].isin(ALLOWED_COUNTRIES), "unknown_country")
     df = df.copy()
     df["reject_reason"] = None
 
