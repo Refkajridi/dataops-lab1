@@ -3,6 +3,7 @@ import pandas as pd
 MAX_UNIT_PRICE = 1000
 ALLOWED_COUNTRIES = ["France", "Germany", "Italy", "Morocco", "Tunisia"]
 
+
 def _flag(df, mask, reason):
     """Mark the rows selected by `mask` as rejected, unless already rejected."""
     df.loc[mask & df["reject_reason"].isna(), "reject_reason"] = reason
@@ -10,8 +11,6 @@ def _flag(df, mask, reason):
 
 def clean_orders(df):
     """Apply the quality rules. Returns two tables: (clean, rejected)."""
-    # Rule 6 - validity: the shop only sells to these countries
-    _flag(df, ~df["country"].isin(ALLOWED_COUNTRIES), "unknown_country")
     df = df.copy()
     df["reject_reason"] = None
 
@@ -29,11 +28,14 @@ def clean_orders(df):
     # Rule 3 - validity: quantity must be positive
     _flag(df, ~(df["quantity"] > 0), "invalid_quantity")
 
-    # Rule 4 - validity: price present, positive, at most MAX_UNIT_PRICE
+    # Rule 4 - validity: price present, positive and plausible
     _flag(df, ~df["unit_price"].between(0.01, MAX_UNIT_PRICE), "invalid_unit_price")
 
-    # Rule 5 - uniqueness: one row per order_id, keep the first
+    # Rule 5 - uniqueness: one row per order_id (we keep the first one)
     _flag(df, df.duplicated("order_id", keep="first"), "duplicate_order_id")
+
+    # Rule 6 - validity: the shop only sells to these countries
+    _flag(df, ~df["country"].isin(ALLOWED_COUNTRIES), "unknown_country")
 
     rejected = df[df["reject_reason"].notna()]
     clean = df[df["reject_reason"].isna()].drop(columns="reject_reason")
